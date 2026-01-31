@@ -9,7 +9,6 @@ export function GallerySection() {
   const [sectionHeight, setSectionHeight] = useState("100vh");
   const [translateX, setTranslateX] = useState(0);
   const rafRef = useRef<number | null>(null);
-  const lastScrollRef = useRef(0);
 
   const images = [
     { src: "https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=1200", alt: "Leather journal on desk" },
