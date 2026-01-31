@@ -3,6 +3,11 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, useCallback } from "react";
 
+// Check for reduced motion preference
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 export function PhilosophySection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [alpineTranslateX, setAlpineTranslateX] = useState(-100);
@@ -33,19 +38,27 @@ export function PhilosophySection() {
   }, []);
 
   useEffect(() => {
+    // Skip animations for reduced motion preference
+    if (prefersReducedMotion()) {
+      setAlpineTranslateX(0);
+      setForestTranslateX(0);
+      setTitleOpacity(0);
+      return;
+    }
+
     const handleScroll = () => {
       // Cancel any pending animation frame
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }
-      
+
       // Use requestAnimationFrame for smooth updates
       rafRef.current = requestAnimationFrame(updateTransforms);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     updateTransforms();
-    
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
       if (rafRef.current) {
@@ -74,7 +87,7 @@ export function PhilosophySection() {
             <div className="relative z-10 grid grid-cols-1 gap-4 px-6 md:grid-cols-2 md:px-12 lg:px-20">
               {/* Artisan Image - comes from left */}
               <div
-                className="relative aspect-[4/3] overflow-hidden rounded-2xl"
+                className="relative aspect-[4/3] overflow-hidden rounded-2xl will-change-transform"
                 style={{
                   transform: `translate3d(${alpineTranslateX}%, 0, 0)`,
                   WebkitTransform: `translate3d(${alpineTranslateX}%, 0, 0)`,
@@ -86,6 +99,7 @@ export function PhilosophySection() {
                   src="https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=1200"
                   alt="Handcrafted leather-bound journal"
                   fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover"
                 />
                 <div className="absolute bottom-6 left-6">
@@ -97,7 +111,7 @@ export function PhilosophySection() {
 
               {/* Script Image - comes from right */}
               <div
-                className="relative aspect-[4/3] overflow-hidden rounded-2xl"
+                className="relative aspect-[4/3] overflow-hidden rounded-2xl will-change-transform"
                 style={{
                   transform: `translate3d(${forestTranslateX}%, 0, 0)`,
                   WebkitTransform: `translate3d(${forestTranslateX}%, 0, 0)`,
@@ -109,6 +123,7 @@ export function PhilosophySection() {
                   src="https://images.unsplash.com/photo-1585336261022-680e295ce3fe?q=80&w=1200"
                   alt="Premium fountain pen collection"
                   fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover"
                 />
                 <div className="absolute bottom-6 left-6">

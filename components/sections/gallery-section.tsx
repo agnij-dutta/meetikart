@@ -3,11 +3,17 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, useCallback } from "react";
 
+// Check for reduced motion preference
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 export function GallerySection() {
   const galleryRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [sectionHeight, setSectionHeight] = useState("100vh");
   const [translateX, setTranslateX] = useState(0);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const rafRef = useRef<number | null>(null);
 
   const images = [
@@ -65,19 +71,25 @@ export function GallerySection() {
   }, []);
 
   useEffect(() => {
+    // Check reduced motion preference
+    if (prefersReducedMotion()) {
+      setReducedMotion(true);
+      return;
+    }
+
     const handleScroll = () => {
       // Cancel any pending animation frame
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }
-      
+
       // Use requestAnimationFrame for smooth updates
       rafRef.current = requestAnimationFrame(updateTransform);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     updateTransform();
-    
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
       if (rafRef.current) {
@@ -86,8 +98,33 @@ export function GallerySection() {
     };
   }, [updateTransform]);
 
+  // For reduced motion, show a simple scrollable gallery
+  if (reducedMotion) {
+    return (
+      <section id="gallery" className="relative bg-background py-12">
+        <div className="flex gap-6 px-6 overflow-x-auto scrollbar-hide">
+          {images.map((image, index) => (
+            <div
+              key={index}
+              className="relative h-[60vh] w-[85vw] flex-shrink-0 overflow-hidden rounded-2xl md:w-[60vw] lg:w-[45vw]"
+            >
+              <Image
+                src={image.src || "/placeholder.svg"}
+                alt={image.alt}
+                fill
+                sizes="(max-width: 768px) 85vw, (max-width: 1200px) 60vw, 45vw"
+                className="object-cover"
+                loading={index < 2 ? "eager" : "lazy"}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section 
+    <section
       id="gallery"
       ref={galleryRef}
       className="relative bg-background"
@@ -97,9 +134,9 @@ export function GallerySection() {
       <div className="sticky top-0 h-screen overflow-hidden">
         <div className="flex h-full items-center">
           {/* Horizontal scrolling container */}
-          <div 
+          <div
             ref={containerRef}
-            className="flex gap-6 px-6"
+            className="flex gap-6 px-6 will-change-transform"
             style={{
               transform: `translate3d(${translateX}px, 0, 0)`,
               WebkitTransform: `translate3d(${translateX}px, 0, 0)`,
@@ -123,8 +160,9 @@ export function GallerySection() {
                   src={image.src || "/placeholder.svg"}
                   alt={image.alt}
                   fill
+                  sizes="(max-width: 768px) 85vw, (max-width: 1200px) 60vw, 45vw"
                   className="object-cover"
-                  priority={index < 3}
+                  loading={index < 3 ? "eager" : "lazy"}
                 />
               </div>
             ))}

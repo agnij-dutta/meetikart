@@ -1,7 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+
+// Check for reduced motion preference
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function ScrollRevealText({ text }: { text: string }) {
   const containerRef = useRef<HTMLParagraphElement>(null);
@@ -88,28 +93,45 @@ const sideImages = [
 export function TechnologySection() {
   const sectionRef = useRef<HTMLElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
-  
+  const rafRef = useRef<number | null>(null);
+
   const descriptionText = "Experience stationery reimagined with artisan craftsmanship. Our handcrafted diaries, premium pens, and mini artworks combine traditional techniques with modern aesthetics to elevate your creative journey. From morning journals to evening sketches, your tools inspire every stroke.";
 
+  const updateProgress = useCallback(() => {
+    if (!sectionRef.current) return;
+
+    const rect = sectionRef.current.getBoundingClientRect();
+    const scrollableHeight = window.innerHeight * 2;
+    const scrolled = -rect.top;
+    const progress = Math.max(0, Math.min(1, scrolled / scrollableHeight));
+
+    setScrollProgress(progress);
+  }, []);
+
   useEffect(() => {
+    // Skip animations for reduced motion preference
+    if (prefersReducedMotion()) {
+      setScrollProgress(1);
+      return;
+    }
+
     const handleScroll = () => {
-      if (!sectionRef.current) return;
-      
-      const rect = sectionRef.current.getBoundingClientRect();
-      const scrollableHeight = window.innerHeight * 2;
-      const scrolled = -rect.top;
-      const progress = Math.max(0, Math.min(1, scrolled / scrollableHeight));
-      
-      setScrollProgress(progress);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+      rafRef.current = requestAnimationFrame(updateProgress);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    
+    updateProgress();
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
     };
-  }, []);
+  }, [updateProgress]);
 
   // Image transforms start after title fades (0.2 to 1)
   const imageProgress = Math.max(0, Math.min(1, (scrollProgress - 0.2) / 0.8));
@@ -135,28 +157,30 @@ export function TechnologySection() {
           >
             
             {/* Left Column */}
-            <div 
+            <div
               className="flex flex-col will-change-transform"
               style={{
                 width: `${sideWidth}%`,
                 gap: `${gap}px`,
-                transform: `translateX(${sideTranslateLeft}%)`,
+                transform: `translate3d(${sideTranslateLeft}%, 0, 0)`,
                 opacity: sideOpacity,
               }}
             >
               {sideImages.filter(img => img.position === "left").map((img, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="relative overflow-hidden will-change-transform"
                   style={{
                     flex: img.span,
                     borderRadius: `${borderRadius}px`,
+                    transform: "translateZ(0)",
                   }}
                 >
                   <Image
                     src={img.src || "/placeholder.svg"}
                     alt={img.alt}
                     fill
+                    sizes="(max-width: 768px) 30vw, 22vw"
                     className="object-cover"
                   />
                 </div>
@@ -164,19 +188,21 @@ export function TechnologySection() {
             </div>
 
             {/* Main Center Image */}
-            <div 
+            <div
               className="relative overflow-hidden will-change-transform"
               style={{
                 width: `${centerWidth}%`,
                 height: "100%",
                 flex: "0 0 auto",
                 borderRadius: `${borderRadius}px`,
+                transform: "translateZ(0)",
               }}
             >
               <Image
                 src="https://images.unsplash.com/photo-1517971129774-8a2b38fa128e?q=80&w=2000"
                 alt="Artist workspace with stationery and creative tools"
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 60vw"
                 className="object-cover"
               />
               <div className="absolute inset-0 bg-foreground/40" />
@@ -215,28 +241,30 @@ export function TechnologySection() {
             </div>
 
             {/* Right Column */}
-            <div 
+            <div
               className="flex flex-col will-change-transform"
               style={{
                 width: `${sideWidth}%`,
                 gap: `${gap}px`,
-                transform: `translateX(${sideTranslateRight}%)`,
+                transform: `translate3d(${sideTranslateRight}%, 0, 0)`,
                 opacity: sideOpacity,
               }}
             >
               {sideImages.filter(img => img.position === "right").map((img, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="relative overflow-hidden will-change-transform"
                   style={{
                     flex: img.span,
                     borderRadius: `${borderRadius}px`,
+                    transform: "translateZ(0)",
                   }}
                 >
                   <Image
                     src={img.src || "/placeholder.svg"}
                     alt={img.alt}
                     fill
+                    sizes="(max-width: 768px) 30vw, 22vw"
                     className="object-cover"
                   />
                 </div>

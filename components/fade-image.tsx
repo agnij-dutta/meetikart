@@ -5,9 +5,10 @@ import { useEffect, useRef, useState } from "react";
 
 interface FadeImageProps extends Omit<ImageProps, "onLoad"> {
   fadeDelay?: number;
+  priority?: boolean;
 }
 
-export function FadeImage({ className, fadeDelay = 0, alt, ...props }: FadeImageProps) {
+export function FadeImage({ className, fadeDelay = 0, alt, priority = false, ...props }: FadeImageProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -36,10 +37,12 @@ export function FadeImage({ className, fadeDelay = 0, alt, ...props }: FadeImage
   }, [fadeDelay]);
 
   return (
-    <div ref={ref} className="relative h-full w-full">
+    <div ref={ref} className="relative h-full w-full" style={{ transform: 'translate3d(0, 0, 0)' }}>
       <Image
         alt={alt}
         {...props}
+        priority={priority}
+        loading={priority ? undefined : "lazy"}
         className={`${className || ""} transition-all duration-700 ease-out ${
           isVisible && isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-[1.02]"
         }`}

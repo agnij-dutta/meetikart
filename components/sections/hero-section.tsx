@@ -1,9 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 const word = "MEETIKART";
+
+// Check for reduced motion preference
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const sideImages = [
   {
@@ -35,26 +40,43 @@ const sideImages = [
 export function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const rafRef = useRef<number | null>(null);
+
+  const updateProgress = useCallback(() => {
+    if (!sectionRef.current) return;
+
+    const rect = sectionRef.current.getBoundingClientRect();
+    const scrollableHeight = window.innerHeight * 2;
+    const scrolled = -rect.top;
+    const progress = Math.max(0, Math.min(1, scrolled / scrollableHeight));
+
+    setScrollProgress(progress);
+  }, []);
 
   useEffect(() => {
+    // Skip animations for reduced motion preference
+    if (prefersReducedMotion()) {
+      setScrollProgress(1);
+      return;
+    }
+
     const handleScroll = () => {
-      if (!sectionRef.current) return;
-      
-      const rect = sectionRef.current.getBoundingClientRect();
-      const scrollableHeight = window.innerHeight * 2;
-      const scrolled = -rect.top;
-      const progress = Math.max(0, Math.min(1, scrolled / scrollableHeight));
-      
-      setScrollProgress(progress);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+      rafRef.current = requestAnimationFrame(updateProgress);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    
+    updateProgress();
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
     };
-  }, []);
+  }, [updateProgress]);
 
   // Text fades out first (0 to 0.2)
   const textOpacity = Math.max(0, 1 - (scrollProgress / 0.2));
@@ -87,28 +109,30 @@ export function HeroSection() {
           >
             
             {/* Left Column */}
-            <div 
+            <div
               className="flex flex-col will-change-transform"
               style={{
                 width: `${sideWidth}%`,
                 gap: `${gap}px`,
-                transform: `translateX(${sideTranslateLeft}%) translateY(${sideTranslateY}%)`,
+                transform: `translate3d(${sideTranslateLeft}%, ${sideTranslateY}%, 0)`,
                 opacity: sideOpacity,
               }}
             >
               {sideImages.filter(img => img.position === "left").map((img, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="relative overflow-hidden will-change-transform"
                   style={{
                     flex: img.span,
                     borderRadius: `${borderRadius}px`,
+                    transform: "translateZ(0)",
                   }}
                 >
                   <Image
                     src={img.src || "/placeholder.svg"}
                     alt={img.alt}
                     fill
+                    sizes="(max-width: 768px) 30vw, 22vw"
                     className="object-cover"
                   />
                 </div>
@@ -123,33 +147,34 @@ export function HeroSection() {
                 height: `${centerHeight}%`,
                 flex: "0 0 auto",
                 borderRadius: `${borderRadius}px`,
+                transform: "translateZ(0)",
               }}
             >
               <Image
                 src="https://images.unsplash.com/photo-1476231682828-37e571bc172f?q=80&w=2000"
                 alt="Moody artistic workspace with warm lighting"
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 60vw"
                 className="object-cover"
                 priority
               />
 
               {/* Dark gradient overlay for text contrast */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30" />
 
               {/* Overlay Text - Fades out first */}
               <div
                 className="absolute inset-0 flex items-end overflow-hidden px-4 pb-4 md:px-8 md:pb-8"
-                style={{ opacity: textOpacity }}
+                style={{ opacity: textOpacity, transform: "translateZ(0)" }}
               >
-                <h1 className="w-full text-[16vw] md:text-[16vw] font-light leading-[0.85] tracking-tight text-white drop-shadow-2xl">
+                <h1 className="w-full text-[10.5vw] sm:text-[11vw] md:text-[12vw] lg:text-[14vw] font-light leading-[0.85] tracking-tight text-white drop-shadow-2xl">
                   {word.split("").map((letter, index) => (
                     <span
                       key={index}
                       className="inline-block animate-[slideUp_0.8s_ease-out_forwards] opacity-0"
                       style={{
                         animationDelay: `${index * 0.08}s`,
-                        transition: 'all 1.5s',
-                        transitionTimingFunction: 'cubic-bezier(0.86, 0, 0.07, 1)',
+                        transform: "translateZ(0)",
                       }}
                     >
                       {letter}
@@ -160,28 +185,30 @@ export function HeroSection() {
             </div>
 
             {/* Right Column */}
-            <div 
+            <div
               className="flex flex-col will-change-transform"
               style={{
                 width: `${sideWidth}%`,
                 gap: `${gap}px`,
-                transform: `translateX(${sideTranslateRight}%) translateY(${sideTranslateY}%)`,
+                transform: `translate3d(${sideTranslateRight}%, ${sideTranslateY}%, 0)`,
                 opacity: sideOpacity,
               }}
             >
               {sideImages.filter(img => img.position === "right").map((img, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="relative overflow-hidden will-change-transform"
                   style={{
                     flex: img.span,
                     borderRadius: `${borderRadius}px`,
+                    transform: "translateZ(0)",
                   }}
                 >
                   <Image
                     src={img.src || "/placeholder.svg"}
                     alt={img.alt}
                     fill
+                    sizes="(max-width: 768px) 30vw, 22vw"
                     className="object-cover"
                   />
                 </div>
